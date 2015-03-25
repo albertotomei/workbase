@@ -14,11 +14,21 @@ use Zend\Mvc\MvcEvent;
 
 class Module
 {
-    public function onBootstrap(MvcEvent $e)
+    public function onBootstrap($e)
     {
-        $eventManager        = $e->getApplication()->getEventManager();
-        $moduleRouteListener = new ModuleRouteListener();
-        $moduleRouteListener->attach($eventManager);
+    	$eventManager   = $e->getApplication()->getEventManager();
+		$serviceManager = $e->getApplication()->getServiceManager();
+		$config         = $serviceManager->get('config');
+		
+        $e->getApplication()->getEventManager()->getSharedManager()->attach('Zend\Mvc\Controller\AbstractController', 'dispatch', function($e) use ($config) {
+        	$controller      = $e->getTarget();
+	        $controllerClass = get_class($controller);
+	        $moduleNamespace = substr($controllerClass, 0, strpos($controllerClass, '\\'));
+			
+			if( isset($config['view_manager']['module_layouts'][$moduleNamespace]) )
+                $controller->layout($config['view_manager']['module_layouts'][$moduleNamespace]);
+        }, 100 );
+		
     }
 
     public function getConfig()
